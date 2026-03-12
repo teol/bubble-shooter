@@ -124,8 +124,9 @@ export class GridManager {
 
     visited.add(`${startRow},${startCol}`);
 
-    while (queue.length > 0) {
-      const { row, col } = queue.shift()!;
+    let head = 0;
+    while (head < queue.length) {
+      const { row, col } = queue[head++];
       const bubble = this.getBubble(row, col);
 
       if (bubble && bubble.color === color && !bubble.isPopping) {
