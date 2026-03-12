@@ -9,6 +9,10 @@ export const COLORS = [
   0x00ffff, // Cyan
 ];
 
+const DROP_GRAVITY = 800;
+const DESTROY_DELAY_MS = 1000;
+const POP_DURATION_MS = 150;
+
 export class Bubble extends Phaser.Physics.Arcade.Sprite {
   public color: number;
   public gridRow: number = -1;
@@ -44,7 +48,7 @@ export class Bubble extends Phaser.Physics.Arcade.Sprite {
       scaleX: 1.5,
       scaleY: 1.5,
       alpha: 0,
-      duration: 150,
+      duration: POP_DURATION_MS,
       onComplete: () => {
         this.destroy();
       },
@@ -56,10 +60,10 @@ export class Bubble extends Phaser.Physics.Arcade.Sprite {
     // Remove from physics but let it fall
     if (this.body) {
       this.body.reset(this.x, this.y);
-      (this.body as Phaser.Physics.Arcade.Body).gravity.y = 800;
+      (this.body as Phaser.Physics.Arcade.Body).gravity.y = DROP_GRAVITY;
       this.setCollideWorldBounds(false);
     }
-    this.scene.time.delayedCall(1000, () => {
+    this.scene.time.delayedCall(DESTROY_DELAY_MS, () => {
       this.destroy();
     });
   }

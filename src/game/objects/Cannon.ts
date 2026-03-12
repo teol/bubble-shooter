@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+const CANNON_ANGLE_OFFSET = 0.2;
+
 export class Cannon {
   private scene: Phaser.Scene;
   private x: number;
@@ -21,8 +23,8 @@ export class Cannon {
     const clampedAngle = Phaser.Math.Clamp(angle, -Math.PI, 0); // Only allow upper half
 
     // further limit the angle to not shoot completely horizontal
-    const minAngle = -Math.PI + 0.2;
-    const maxAngle = -0.2;
+    const minAngle = -Math.PI + CANNON_ANGLE_OFFSET;
+    const maxAngle = -CANNON_ANGLE_OFFSET;
     const finalAngle = Phaser.Math.Clamp(clampedAngle, minAngle, maxAngle);
 
     this.drawCannon(finalAngle);

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { gameState, setGameStatus } from '../store/gameState';
 
+  const RESTART_DELAY_MS = 50;
+
   const startGame = () => setGameStatus('playing');
   const restartGame = () => {
     setGameStatus('start'); // Emit start to trigger MainScene pause/reset readiness
     setTimeout(() => {
       setGameStatus('playing'); // Emit playing again to resume and reset Phaser properly
-    }, 50);
+    }, RESTART_DELAY_MS);
   };
 </script>
 

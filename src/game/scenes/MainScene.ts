@@ -5,12 +5,23 @@ import { GridManager } from '../logic/GridManager';
 import { updateScore, setGameStatus, gameState } from '../../store/gameState';
 import { get } from 'svelte/store';
 
+const GRID_ROWS = 12;
+const GRID_COLS = 10;
+const BUBBLE_DIAMETER = 32;
+const BUBBLE_RADIUS = 16;
+const CANNON_OFFSET_Y = 40;
+const SHOOT_SPEED = 800;
+const SCORE_MATCH = 10;
+const SCORE_FLOAT = 20;
+const ITEM_FLOAT_DELAY = 200;
+
 export class MainScene extends Phaser.Scene {
   private gridManager!: GridManager;
   private cannon!: Cannon;
   private currentBubble?: Bubble;
   private isShooting: boolean = false;
   private bubblesGroup!: Phaser.Physics.Arcade.Group;
+  private unsubscribeGameState?: () => void;
 
   constructor() {
     super({ key: 'MainScene' });
@@ -20,23 +31,44 @@ export class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#2c3e50');
 
     this.gridManager = new GridManager(
-      12,
-      10,
-      32,
-      this.cameras.main.width / 2 - (10 * 32) / 2 + 16,
-      32
+      GRID_ROWS,
+      GRID_COLS,
+      BUBBLE_DIAMETER,
+      this.cameras.main.width / 2 - (GRID_COLS * BUBBLE_DIAMETER) / 2 + BUBBLE_RADIUS,
+      BUBBLE_DIAMETER
     );
     this.bubblesGroup = this.physics.add.group();
 
-    this.cannon = new Cannon(this, this.cameras.main.width / 2, this.cameras.main.height - 40);
+    this.cannon = new Cannon(
+      this,
+      this.cameras.main.width / 2,
+      this.cameras.main.height - CANNON_OFFSET_Y
+    );
 
     this.generateInitialGrid();
     this.prepareNextBubble();
 
+    // Use built-in physics engine for robust collision detection
+    this.physics.add.collider(
+      this.bubblesGroup,
+      this.bubblesGroup,
+      this.onBubbleCollision,
+      (b1, b2) => {
+        const moving = b1 as Bubble;
+        const staticB = b2 as Bubble;
+        // Prevent collision with itself or other moving bubbles
+        return (
+          (moving.body!.velocity.length() > 0 && staticB.body!.velocity.length() === 0) ||
+          (staticB.body!.velocity.length() > 0 && moving.body!.velocity.length() === 0)
+        );
+      },
+      this
+    );
+
     this.input.on('pointerdown', this.shootBubble, this);
 
     // Listen to game status
-    gameState.subscribe((state) => {
+    this.unsubscribeGameState = gameState.subscribe((state) => {
       if (state.status === 'playing' && this.scene.isPaused()) {
         this.scene.resume();
         this.resetGame();
@@ -45,9 +77,24 @@ export class MainScene extends Phaser.Scene {
       }
     });
 
+    this.events.on('shutdown', this.shutdown, this);
+
     if (get(gameState).status !== 'playing') {
       this.scene.pause();
     }
+  }
+
+  shutdown() {
+    if (this.unsubscribeGameState) {
+      this.unsubscribeGameState();
+    }
+  }
+
+  private onBubbleCollision(b1: any, b2: any) {
+    const bubble1 = b1 as Bubble;
+    const bubble2 = b2 as Bubble;
+    const movingBubble = bubble1.body!.velocity.length() > 0 ? bubble1 : bubble2;
+    this.snapBubble(movingBubble);
   }
 
   update() {
@@ -63,24 +110,8 @@ export class MainScene extends Phaser.Scene {
       this.currentBubble.body.velocity.length() > 0
     ) {
       // Update physics collision with top border
-      if (this.currentBubble.y <= this.gridManager.startY - 16) {
+      if (this.currentBubble.y <= this.gridManager.startY - BUBBLE_RADIUS) {
         this.snapBubble(this.currentBubble);
-      } else {
-        // Check collision with other bubbles
-        const activeBubbles = this.gridManager.getAllBubbles();
-        for (const b of activeBubbles) {
-          // Approximate collision distance
-          const dist = Phaser.Math.Distance.Between(
-            this.currentBubble.x,
-            this.currentBubble.y,
-            b.x,
-            b.y
-          );
-          if (dist <= 30 && b.y <= this.currentBubble.y) {
-            this.snapBubble(this.currentBubble);
-            break;
-          }
-        }
       }
     }
   }
@@ -102,7 +133,7 @@ export class MainScene extends Phaser.Scene {
     this.currentBubble = new Bubble(
       this,
       this.cameras.main.width / 2,
-      this.cameras.main.height - 40,
+      this.cameras.main.height - CANNON_OFFSET_Y,
       nextColor
     );
     this.bubblesGroup.add(this.currentBubble);
@@ -114,13 +145,12 @@ export class MainScene extends Phaser.Scene {
 
     this.isShooting = true;
     const angle = this.cannon.updateAngle(this.input.activePointer.x, this.input.activePointer.y);
-    const speed = 800;
 
     const bx = this.cameras.main.width / 2;
-    const by = this.cameras.main.height - 40;
+    const by = this.cameras.main.height - CANNON_OFFSET_Y;
     this.currentBubble.setPosition(bx, by);
 
-    this.physics.velocityFromRotation(angle, speed, this.currentBubble.body?.velocity);
+    this.physics.velocityFromRotation(angle, SHOOT_SPEED, this.currentBubble.body?.velocity);
   }
 
   private snapBubble(bubble: Bubble) {
@@ -159,42 +189,23 @@ export class MainScene extends Phaser.Scene {
   }
 
   private handleMatches(row: number, col: number, color: number) {
-    const toExplore = [{ row, col }];
-    const matched: Bubble[] = [];
-    const visited = new Set<string>();
-    visited.add(`${row},${col}`);
-
-    while (toExplore.length > 0) {
-      const curr = toExplore.pop()!;
-      const b = this.gridManager.getBubble(curr.row, curr.col);
-      if (b && b.color === color) {
-        matched.push(b);
-        const neighbors = this.gridManager.getNeighbors(curr.row, curr.col);
-        for (const n of neighbors) {
-          const key = `${n.row},${n.col}`;
-          if (!visited.has(key)) {
-            visited.add(key);
-            toExplore.push(n);
-          }
-        }
-      }
-    }
+    const matched = this.gridManager.getMatchingCluster(row, col, color);
 
     if (matched.length >= 3) {
       matched.forEach((b) => {
         this.gridManager.removeBubble(b.gridRow, b.gridCol);
         b.pop();
       });
-      updateScore(matched.length * 10);
+      updateScore(matched.length * SCORE_MATCH);
 
-      this.time.delayedCall(200, () => {
+      this.time.delayedCall(ITEM_FLOAT_DELAY, () => {
         const floating = this.gridManager.getFloatingBubbles();
         floating.forEach((b) => {
           this.gridManager.removeBubble(b.gridRow, b.gridCol);
           b.drop();
         });
         if (floating.length > 0) {
-          updateScore(floating.length * 20);
+          updateScore(floating.length * SCORE_FLOAT);
         }
       });
     }
@@ -208,11 +219,11 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.gridManager = new GridManager(
-      12,
-      10,
-      32,
-      this.cameras.main.width / 2 - (10 * 32) / 2 + 16,
-      32
+      GRID_ROWS,
+      GRID_COLS,
+      BUBBLE_DIAMETER,
+      this.cameras.main.width / 2 - (GRID_COLS * BUBBLE_DIAMETER) / 2 + BUBBLE_RADIUS,
+      BUBBLE_DIAMETER
     );
     this.generateInitialGrid();
     this.prepareNextBubble();
