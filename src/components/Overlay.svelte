@@ -1,15 +1,26 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { gameState, setGameStatus } from '../store/gameState';
 
-  const RESTART_DELAY_MS = 50;
+  let isRestarting = false;
 
   const startGame = () => setGameStatus('playing');
+
   const restartGame = () => {
-    setGameStatus('start'); // Emit start to trigger MainScene pause/reset readiness
-    setTimeout(() => {
-      setGameStatus('playing'); // Emit playing again to resume and reset Phaser properly
-    }, RESTART_DELAY_MS);
+    isRestarting = true;
+    gameState.set({ status: 'start', score: 0 }); // Emit start to trigger MainScene pause/reset readiness
   };
+
+  onMount(() => {
+    const handleSceneReady = () => {
+      if (isRestarting) {
+        isRestarting = false;
+        setGameStatus('playing'); // Emit playing again to resume and reset Phaser properly
+      }
+    };
+    window.addEventListener('phaser-scene-ready', handleSceneReady);
+    return () => window.removeEventListener('phaser-scene-ready', handleSceneReady);
+  });
 </script>
 
 <div class="overlay-container">

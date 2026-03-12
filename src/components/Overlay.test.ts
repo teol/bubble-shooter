@@ -43,7 +43,13 @@ describe('Overlay Component', () => {
     const btn = screen.getByText('Play Again');
     await fireEvent.click(btn);
 
-    // Play again triggers a delayed playing state, first it goes to 'start' to reset
+    // Play again goes back to 'start' to prepare for reset
     expect(get(gameState).status).toBe('start');
+    expect(get(gameState).score).toBe(0);
+
+    // Simulate Phaser scene being ready
+    window.dispatchEvent(new CustomEvent('phaser-scene-ready'));
+
+    expect(get(gameState).status).toBe('playing');
   });
 });

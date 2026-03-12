@@ -71,9 +71,12 @@ export class MainScene extends Phaser.Scene {
     this.unsubscribeGameState = gameState.subscribe((state) => {
       if (state.status === 'playing' && this.scene.isPaused()) {
         this.scene.resume();
-        this.resetGame();
-      } else if (state.status === 'gameover' || state.status === 'start') {
+      } else if (state.status === 'gameover') {
         this.scene.pause();
+      } else if (state.status === 'start') {
+        this.scene.pause();
+        this.resetGame();
+        window.dispatchEvent(new CustomEvent('phaser-scene-ready'));
       }
     });
 
@@ -165,10 +168,30 @@ export class MainScene extends Phaser.Scene {
     let finalRow = loc.row;
     let finalCol = loc.col;
     if (this.gridManager.getBubble(loc.row, loc.col) !== null) {
-      finalRow++;
-      if (!this.gridManager.isValidPosition(finalRow, finalCol)) {
-        finalRow--;
-        finalCol++;
+      const neighbors = this.gridManager.getNeighbors(loc.row, loc.col);
+      let minDistance = Infinity;
+      let closestNeighbor: { row: number; col: number } | null = null;
+
+      for (const n of neighbors) {
+        if (this.gridManager.getBubble(n.row, n.col) === null) {
+          const worldPos = this.gridManager.getBubbleWorldPosition(n.row, n.col);
+          const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestNeighbor = n;
+          }
+        }
+      }
+
+      if (closestNeighbor) {
+        finalRow = closestNeighbor.row;
+        finalCol = closestNeighbor.col;
+      } else {
+        finalRow++;
+        if (!this.gridManager.isValidPosition(finalRow, finalCol)) {
+          finalRow--;
+          finalCol++;
+        }
       }
     }
 

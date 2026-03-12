@@ -14,7 +14,3 @@ export const updateScore = (points: number) => {
 export const setGameStatus = (status: GameStatus) => {
   gameState.update((state) => ({ ...state, status }));
 };
-
-export const resetGame = () => {
-  gameState.set({ status: 'playing', score: 0 });
-};
