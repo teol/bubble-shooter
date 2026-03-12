@@ -160,8 +160,10 @@ export class GridManager {
     }
 
     // BFS to find all connected bubbles
-    while (queue.length > 0) {
-      const { row, col } = queue.shift()!;
+    // BFS to find all connected bubbles
+    let head = 0;
+    while (head < queue.length) {
+      const { row, col } = queue[head++];
       const neighbors = this.getNeighbors(row, col);
       for (const n of neighbors) {
         const key = `${n.row},${n.col}`;
