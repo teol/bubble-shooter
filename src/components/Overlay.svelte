@@ -26,7 +26,7 @@
 <div class="overlay-container">
   {#if $gameState.status === 'start'}
     <div class="panel">
-      <h1>Puzzle Bobble</h1>
+      <h1>Bubble Shooter</h1>
       <button on:click={startGame}>Start Game</button>
     </div>
   {:else if $gameState.status === 'playing'}
@@ -76,7 +76,10 @@
   h1 {
     font-size: 3rem;
     margin-bottom: 2rem;
+    line-height: 1.2;
+    padding-bottom: 0.2em; /* Prevents descenders from clipping */
     background: linear-gradient(45deg, #00f2fe, #4facfe);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 800;

@@ -20,19 +20,52 @@ export class Bubble extends Phaser.Physics.Arcade.Sprite {
   public isPopping: boolean = false;
 
   constructor(scene: Phaser.Scene, x: number, y: number, color: number) {
-    super(scene, x, y, 'bubble');
+    const textureKey = `bubble_${color}`;
+    super(scene, x, y, textureKey);
     this.color = color;
 
-    // We can generate a texture dynamically if it doesn't exist
-    if (!scene.textures.exists('bubble')) {
-      const graphics = scene.make.graphics({ x: 0, y: 0 });
-      graphics.fillStyle(0xffffff);
-      graphics.fillCircle(16, 16, 16);
-      graphics.generateTexture('bubble', 32, 32);
+    // Generate a beautiful glassy texture dynamically for each color
+    if (!scene.textures.exists(textureKey)) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d')!;
+      const r = 16;
+
+      const rColor = (color >> 16) & 255;
+      const gColor = (color >> 8) & 255;
+      const bColor = color & 255;
+      const colorStr = `rgb(${rColor},${gColor},${bColor})`;
+      const darkColorStr = `rgb(${Math.floor(rColor * 0.5)},${Math.floor(gColor * 0.5)},${Math.floor(bColor * 0.5)})`;
+
+      // Main colored bubble with radial gradient
+      const grad = ctx.createRadialGradient(12, 12, 2, 16, 16, 16);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.3, colorStr);
+      grad.addColorStop(0.8, colorStr);
+      grad.addColorStop(1, darkColorStr);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(r, r, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bright glassy reflection on top left
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.beginPath();
+      ctx.ellipse(10, 8, 6, 3, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Secondary reflection bottom right
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.beginPath();
+      ctx.ellipse(22, 24, 4, 2, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      scene.textures.addCanvas(textureKey, canvas);
     }
 
-    this.setTexture('bubble');
-    this.setTint(color);
+    this.setTexture(textureKey);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
