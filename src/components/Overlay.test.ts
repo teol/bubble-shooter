@@ -2,7 +2,7 @@
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import { describe, it, expect, beforeEach } from 'vitest';
 import Overlay from './Overlay.svelte';
-import { gameState } from '../store/gameState';
+import { gameState, gameEvents } from '../store/gameState';
 import { get } from 'svelte/store';
 
 describe('Overlay Component', () => {
@@ -48,7 +48,7 @@ describe('Overlay Component', () => {
     expect(get(gameState).score).toBe(0);
 
     // Simulate Phaser scene being ready
-    window.dispatchEvent(new CustomEvent('phaser-scene-ready'));
+    gameEvents.emit('scene-ready');
 
     expect(get(gameState).status).toBe('playing');
   });

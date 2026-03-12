@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Bubble, COLORS } from '../objects/Bubble';
 import { Cannon } from '../objects/Cannon';
 import { GridManager } from '../logic/GridManager';
-import { updateScore, setGameStatus, gameState } from '../../store/gameState';
+import { updateScore, setGameStatus, gameState, gameEvents } from '../../store/gameState';
 import { get } from 'svelte/store';
 
 const GRID_ROWS = 12;
@@ -76,7 +76,7 @@ export class MainScene extends Phaser.Scene {
       } else if (state.status === 'start') {
         this.scene.pause();
         this.resetGame();
-        window.dispatchEvent(new CustomEvent('phaser-scene-ready'));
+        gameEvents.emit('scene-ready');
       }
     });
 
@@ -187,10 +187,29 @@ export class MainScene extends Phaser.Scene {
         finalRow = closestNeighbor.row;
         finalCol = closestNeighbor.col;
       } else {
-        finalRow++;
-        if (!this.gridManager.isValidPosition(finalRow, finalCol)) {
-          finalRow--;
-          finalCol++;
+        let bestFallback: { row: number; col: number } | null = null;
+        let minFallbackDist = Infinity;
+        let nextRow = loc.row + 1;
+
+        if (nextRow < this.gridManager.rows) {
+          const colsInRow = nextRow % 2 === 0 ? this.gridManager.cols : this.gridManager.cols - 1;
+          for (let c = 0; c < colsInRow; c++) {
+            if (this.gridManager.getBubble(nextRow, c) === null) {
+              const worldPos = this.gridManager.getBubbleWorldPosition(nextRow, c);
+              const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
+              if (dist < minFallbackDist) {
+                minFallbackDist = dist;
+                bestFallback = { row: nextRow, col: c };
+              }
+            }
+          }
+        }
+
+        if (bestFallback) {
+          finalRow = bestFallback.row;
+          finalCol = bestFallback.col;
+        } else {
+          finalRow++;
         }
       }
     }

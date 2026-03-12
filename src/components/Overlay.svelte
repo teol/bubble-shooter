@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameState, setGameStatus } from '../store/gameState';
+  import { gameState, setGameStatus, gameEvents } from '../store/gameState';
 
   let isRestarting = false;
 
@@ -18,8 +18,8 @@
         setGameStatus('playing'); // Emit playing again to resume and reset Phaser properly
       }
     };
-    window.addEventListener('phaser-scene-ready', handleSceneReady);
-    return () => window.removeEventListener('phaser-scene-ready', handleSceneReady);
+    const unsubscribe = gameEvents.on('scene-ready', handleSceneReady);
+    return () => unsubscribe();
   });
 </script>
 
