@@ -25,6 +25,20 @@ A Bubble Shooter game built with TypeScript using the following stack:
    ```
    The project will be accessible at `http://localhost:5173/` (or the port specified by Vite).
 
+## Testing
+
+The project is fully tested using Vitest for game logic, and Svelte Testing Library for UI components.
+
+1. Run the test suite:
+   ```bash
+   bun run test
+   ```
+2. Verify formatting and type safety:
+   ```bash
+   bun run format:check
+   bun run check
+   ```
+
 ## Production Deployment
 
 1. Build the project for production:
