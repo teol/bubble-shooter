@@ -22,13 +22,28 @@ export class MainScene extends Phaser.Scene {
   private isShooting: boolean = false;
   private bubblesGroup!: Phaser.Physics.Arcade.Group;
   private unsubscribeGameState?: () => void;
+  private nextBubbleColor!: number;
+  private nextBubbleDisplay?: Phaser.GameObjects.Sprite;
 
   constructor() {
     super({ key: 'MainScene' });
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#2c3e50');
+    // Beautiful vibrant arcade gradient background
+    const bgGraphics = this.add.graphics();
+    bgGraphics.fillGradientStyle(0x4facfe, 0x4facfe, 0x00f2fe, 0x00f2fe, 1);
+    bgGraphics.fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
+
+    // Add decorative floating bubbles in the background
+    for (let i = 0; i < 20; i++) {
+      const x = Phaser.Math.Between(0, this.cameras.main.width);
+      const y = Phaser.Math.Between(0, this.cameras.main.height);
+      const size = Phaser.Math.Between(10, 50);
+      const alpha = Phaser.Math.FloatBetween(0.05, 0.2);
+      bgGraphics.fillStyle(0xffffff, alpha);
+      bgGraphics.fillCircle(x, y, size);
+    }
 
     this.gridManager = new GridManager(
       GRID_ROWS,
@@ -46,6 +61,7 @@ export class MainScene extends Phaser.Scene {
     );
 
     this.generateInitialGrid();
+    this.nextBubbleColor = COLORS[Phaser.Math.Between(0, COLORS.length - 1)];
     this.prepareNextBubble();
 
     // Use built-in physics engine for robust collision detection
@@ -131,15 +147,31 @@ export class MainScene extends Phaser.Scene {
   }
 
   private prepareNextBubble() {
-    const nextColor = COLORS[Phaser.Math.Between(0, COLORS.length - 1)];
     this.currentBubble = new Bubble(
       this,
       this.cameras.main.width / 2,
       this.cameras.main.height - CANNON_OFFSET_Y,
-      nextColor
+      this.nextBubbleColor
     );
     this.bubblesGroup.add(this.currentBubble);
     this.isShooting = false;
+
+    // Generate new next bubble color
+    this.nextBubbleColor = COLORS[Phaser.Math.Between(0, COLORS.length - 1)];
+
+    // Update display for next bubble in the bag (bag is roughly x - 60, y + 10 relative to cannon)
+    if (this.nextBubbleDisplay) {
+      this.nextBubbleDisplay.destroy();
+    }
+    const textureKey = `bubble_${this.nextBubbleColor}`;
+    this.nextBubbleDisplay = this.add.sprite(
+      this.cameras.main.width / 2 - 60,
+      this.cameras.main.height - CANNON_OFFSET_Y + 10,
+      textureKey
+    );
+    this.nextBubbleDisplay.setScale(0.8);
+    // Draw nextBubbleDisplay above characters but behind cannon base? Actually just above background
+    this.nextBubbleDisplay.setDepth(1);
   }
 
   private shootBubble() {
@@ -245,6 +277,7 @@ export class MainScene extends Phaser.Scene {
       BUBBLE_DIAMETER
     );
     this.generateInitialGrid();
+    this.nextBubbleColor = COLORS[Phaser.Math.Between(0, COLORS.length - 1)];
     this.prepareNextBubble();
   }
 }
