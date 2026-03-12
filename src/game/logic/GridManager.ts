@@ -1,5 +1,6 @@
 import { Bubble } from '../objects/Bubble';
 
+const HEX_GRID_Y_SPACING_FACTOR = Math.sqrt(3) / 2;
 export interface GridLocation {
   row: number;
   col: number;
@@ -31,7 +32,7 @@ export class GridManager {
 
   getGridPosition(x: number, y: number): GridLocation {
     const rowY = Math.max(0, y - this.startY);
-    const row = Math.round(rowY / (this.bubbleSize * 0.866)); // 0.866 is approx Math.sqrt(3)/2 for hex grid
+    const row = Math.round(rowY / (this.bubbleSize * HEX_GRID_Y_SPACING_FACTOR));
 
     const isOddRow = Math.max(0, row) % 2 !== 0;
     const rowStartX = this.startX + (isOddRow ? this.bubbleSize / 2 : 0);
@@ -45,7 +46,7 @@ export class GridManager {
   getBubbleWorldPosition(row: number, col: number): { x: number; y: number } {
     const isOddRow = row % 2 !== 0;
     const x = this.startX + col * this.bubbleSize + (isOddRow ? this.bubbleSize / 2 : 0);
-    const y = this.startY + row * (this.bubbleSize * 0.866);
+    const y = this.startY + row * (this.bubbleSize * HEX_GRID_Y_SPACING_FACTOR);
     return { x, y };
   }
 

@@ -169,17 +169,15 @@ export class MainScene extends Phaser.Scene {
     if (this.gridManager.getBubble(loc.row, loc.col) !== null) {
       let minDistance = Infinity;
       let closestValidPos: { row: number; col: number } | null = null;
+      const neighbors = this.gridManager.getNeighbors(loc.row, loc.col);
 
-      for (let r = 0; r < this.gridManager.rows; r++) {
-        const colsInRow = r % 2 === 0 ? this.gridManager.cols : this.gridManager.cols - 1;
-        for (let c = 0; c < colsInRow; c++) {
-          if (this.gridManager.getBubble(r, c) === null) {
-            const worldPos = this.gridManager.getBubbleWorldPosition(r, c);
-            const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
-            if (dist < minDistance) {
-              minDistance = dist;
-              closestValidPos = { row: r, col: c };
-            }
+      for (const n of neighbors) {
+        if (this.gridManager.getBubble(n.row, n.col) === null) {
+          const worldPos = this.gridManager.getBubbleWorldPosition(n.row, n.col);
+          const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestValidPos = { row: n.row, col: n.col };
           }
         }
       }
@@ -187,6 +185,9 @@ export class MainScene extends Phaser.Scene {
       if (closestValidPos) {
         finalRow = closestValidPos.row;
         finalCol = closestValidPos.col;
+      } else {
+        // Fallback if all neighbors are occupied
+        finalRow++;
       }
     }
 
