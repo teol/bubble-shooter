@@ -14,7 +14,7 @@ export class Cannon {
     this.y = y;
 
     this.cannonGraphics = this.scene.add.graphics();
-    this.drawCannon(Math.PI / 2); // Point straight up initially
+    this.drawCannon(-Math.PI / 2); // Point straight up initially
   }
 
   public updateAngle(pointerX: number, pointerY: number): number {
