@@ -54,13 +54,12 @@ export class MainScene extends Phaser.Scene {
       this.bubblesGroup,
       this.onBubbleCollision,
       (b1, b2) => {
-        const moving = b1 as Bubble;
-        const staticB = b2 as Bubble;
-        // Prevent collision with itself or other moving bubbles
-        return (
-          (moving.body!.velocity.length() > 0 && staticB.body!.velocity.length() === 0) ||
-          (staticB.body!.velocity.length() > 0 && moving.body!.velocity.length() === 0)
-        );
+        const bubble1 = b1 as Bubble;
+        const bubble2 = b2 as Bubble;
+        // Only process collisions between a moving bubble and a static one.
+        const bubble1IsMoving = bubble1.body!.velocity.length() > 0;
+        const bubble2IsMoving = bubble2.body!.velocity.length() > 0;
+        return bubble1IsMoving !== bubble2IsMoving;
       },
       this
     );
@@ -168,49 +167,26 @@ export class MainScene extends Phaser.Scene {
     let finalRow = loc.row;
     let finalCol = loc.col;
     if (this.gridManager.getBubble(loc.row, loc.col) !== null) {
-      const neighbors = this.gridManager.getNeighbors(loc.row, loc.col);
       let minDistance = Infinity;
-      let closestNeighbor: { row: number; col: number } | null = null;
+      let closestValidPos: { row: number; col: number } | null = null;
 
-      for (const n of neighbors) {
-        if (this.gridManager.getBubble(n.row, n.col) === null) {
-          const worldPos = this.gridManager.getBubbleWorldPosition(n.row, n.col);
-          const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
-          if (dist < minDistance) {
-            minDistance = dist;
-            closestNeighbor = n;
+      for (let r = 0; r < this.gridManager.rows; r++) {
+        const colsInRow = r % 2 === 0 ? this.gridManager.cols : this.gridManager.cols - 1;
+        for (let c = 0; c < colsInRow; c++) {
+          if (this.gridManager.getBubble(r, c) === null) {
+            const worldPos = this.gridManager.getBubbleWorldPosition(r, c);
+            const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestValidPos = { row: r, col: c };
+            }
           }
         }
       }
 
-      if (closestNeighbor) {
-        finalRow = closestNeighbor.row;
-        finalCol = closestNeighbor.col;
-      } else {
-        let bestFallback: { row: number; col: number } | null = null;
-        let minFallbackDist = Infinity;
-        let nextRow = loc.row + 1;
-
-        if (nextRow < this.gridManager.rows) {
-          const colsInRow = nextRow % 2 === 0 ? this.gridManager.cols : this.gridManager.cols - 1;
-          for (let c = 0; c < colsInRow; c++) {
-            if (this.gridManager.getBubble(nextRow, c) === null) {
-              const worldPos = this.gridManager.getBubbleWorldPosition(nextRow, c);
-              const dist = Phaser.Math.Distance.Between(bubble.x, bubble.y, worldPos.x, worldPos.y);
-              if (dist < minFallbackDist) {
-                minFallbackDist = dist;
-                bestFallback = { row: nextRow, col: c };
-              }
-            }
-          }
-        }
-
-        if (bestFallback) {
-          finalRow = bestFallback.row;
-          finalCol = bestFallback.col;
-        } else {
-          finalRow++;
-        }
+      if (closestValidPos) {
+        finalRow = closestValidPos.row;
+        finalCol = closestValidPos.col;
       }
     }
 

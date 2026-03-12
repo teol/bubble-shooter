@@ -27,21 +27,23 @@
   {#if $gameState.status === 'start'}
     <div class="panel">
       <h1>Puzzle Bobble</h1>
-      <button onclick={startGame}>Start Game</button>
+      <button on:click={startGame}>Start Game</button>
     </div>
-  {/if}
-
-  {#if $gameState.status === 'playing'}
+  {:else if $gameState.status === 'playing'}
     <div class="hud">
       <div class="score">Score: {$gameState.score}</div>
     </div>
-  {/if}
-
-  {#if $gameState.status === 'gameover'}
+  {:else if $gameState.status === 'gameover'}
     <div class="panel">
       <h1>Game Over!</h1>
       <p>Final Score: {$gameState.score}</p>
-      <button onclick={restartGame}>Play Again</button>
+      <button on:click={restartGame}>Play Again</button>
+    </div>
+  {:else if $gameState.status === 'victory'}
+    <div class="panel">
+      <h1>You Win!</h1>
+      <p>Final Score: {$gameState.score}</p>
+      <button on:click={restartGame}>Play Again</button>
     </div>
   {/if}
 </div>
